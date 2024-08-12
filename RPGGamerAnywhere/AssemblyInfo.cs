@@ -1,3 +1,3 @@
 ﻿using System.Runtime.CompilerServices;
 
-[assembly:InternalsVisibleTo("RPGGamerAnywhere.Test")]
+[assembly: InternalsVisibleTo("RPGGamerAnywhere.Test")]

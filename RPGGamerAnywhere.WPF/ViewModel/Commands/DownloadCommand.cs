@@ -11,6 +11,7 @@ namespace RPGGamerAnywhere.WPF.ViewModel.Commands
         }
 
         public bool CanExecute(object? parameter) => vm.SelectedSong is not null;
+
         public void Execute(object? parameter) => new Thread(async () =>
         {
             await MainVM.SaveSong(vm.SelectedSong);

@@ -1,9 +1,9 @@
 ﻿using NAudio.Wave;
 using NAudio.WaveFormRenderer;
+using RPGGamerAnywhere.Helpers;
 using RPGGamerAnywhere.Model.Database;
 using RPGGamerAnywhere.Model.Settings;
 using RPGGamerAnywhere.WPF.ViewModel.Commands;
-using RPGGamerAnywhere.WPF.ViewModel.Helpers;
 using System.Collections.ObjectModel;
 using System.Drawing.Imaging;
 using System.IO;
@@ -19,134 +19,95 @@ namespace RPGGamerAnywhere.WPF.ViewModel
 {
     public partial class MainVM : ViewModelBase
     {
-        private readonly string ROOT = @"http://www.rpgamers.net/radio/data/"; //  + data_# + / +  4 digit number .dat
+        public const string ROOT = "http://www.rpgamers.net/radio/data/";
 
-        private readonly WaveFormRenderer waveFormRenderer = new();
-        public ImageSource? WaveFormSource { get => waveFormSource; set { waveFormSource = value; NotifyPropertyChanged(); } }
-        public double FillWidth { get => fillWidth; set { fillWidth = value; NotifyPropertyChanged(); } }
+        private readonly WaveFormRenderer _waveFormRenderer = new();
+        public ImageSource? WaveFormSource { get => _waveFormSource; set => SetProperty(ref _waveFormSource, value); }
+        public double FillWidth { get => _fillWidth; set => SetProperty(ref _fillWidth, value); }
 
-        private string status = string.Empty;
-        public string Status
-        {
-            get => status;
-            set
-            {
-                if (value.Length == 0)
-                    status = "Ready";
-                else
-                    status = value;
-                NotifyPropertyChanged();
-            }
-        }
+        private string _status = string.Empty;
+        public string Status { get => _status; set => SetProperty(ref _status, value.Length == 0 ? "Ready" : value); }
 
-        private string songCount = string.Empty;
-        public string SongCount
-        {
-            get => songCount;
-            set
-            {
-                if (value.Length == 0)
-                    songCount = "No Songs";
-                else
-                    songCount = value;
-                NotifyPropertyChanged();
-            }
-        }
+        private string _songCount = string.Empty;
+        public string SongCount { get => _songCount; set => SetProperty(ref _songCount, value.Length == 0 ? "No Songs" : value); }
 
-        private string duration = string.Empty;
-        public string Duration
-        {
-            get => duration;
-            set
-            {
-                duration = value;
-                NotifyPropertyChanged();
-            }
-        }
+        private string _duration = string.Empty;
+        public string Duration { get => _duration; set => SetProperty(ref _duration, value); }
 
-        private double volume = 0.5;
+        private double _volume = 0.5;
         public double Volume
         {
-            get => volume;
+            get => _volume;
             set
             {
-                volume = value;
+                SetProperty(ref _volume, value);
                 SetVolume();
-                NotifyPropertyChanged();
             }
         }
 
-        private string search = string.Empty;
+        private string _search = string.Empty;
         public string Search
         {
-            get => search;
-            set { search = value; Query(); NotifyPropertyChanged(); }
+            get => _search;
+            set
+            {
+                SetProperty(ref _search, value);
+                Query();
+            }
         }
 
-        private Song? selectedSong = null;
+        private Song? _selectedSong = null;
         public Song? SelectedSong
         {
-            get => selectedSong;
-            set { selectedSong = value; if (value != null) PlaySong(value); }
+            get => _selectedSong;
+            set
+            {
+                SetProperty(ref _selectedSong, value);
+                if (value != null)
+                    PlaySong(value);
+            }
         }
 
-        private Playlist? selectedPlaylist = null;
-        public Playlist? SelectedPlaylist
-        {
-            get => selectedPlaylist;
-            set { selectedPlaylist = value; }
-        }
+        private Playlist? _selectedPlaylist;
+        public Playlist? SelectedPlaylist { get => _selectedPlaylist; set => SetProperty(ref _selectedPlaylist, value); }
 
-        private bool isPlaying = false;
-        public bool IsPlaying
-        {
-            get => isPlaying;
-            set { isPlaying = value; NotifyPropertyChanged(); }
-        }
-        private bool isRequesting = true;
-        public bool IsRequesting
-        {
-            get => isRequesting;
-            set { isRequesting = value; NotifyPropertyChanged(); }
-        }
+        private bool _isPlaying;
+        public bool IsPlaying { get => _isPlaying; set => SetProperty(ref _isPlaying, value); }
 
-        public SaveVolumeCommand SaveVolumeCommand { get; set; }
-        public SearchLinksCommand SearchLinksCommand { get; set; }
-        public DownloadCommand DownloadCommand { get; set; }
-        public DownloadAllCommand DownloadAllCommand { get; set; }
-        public PreviousCommand PreviousCommand { get; set; }
-        public NextCommand NextCommand { get; set; }
-        public PauseCommand PauseCommand { get; set; }
-        public CreatePlaylistCommand CreatePlaylistCommand { get; set; }
-        public FixTitleCommand FixTitleCommand { get; set; }
-        public ClearRequestsCommand ClearRequestsCommand { get; set; }
-        public ObservableCollection<Song> FoundLinks { get; set; }
-        public ObservableCollection<Playlist> Playlists { get; set; }
+        private bool _isRequesting = true;
+        public bool IsRequesting { get => _isRequesting; set => SetProperty(ref _isRequesting, value); }
 
+        #region Commands
+        public SaveVolumeCommand SaveVolumeCommand { get; }
+        public SearchLinksCommand SearchLinksCommand { get; }
+        public DownloadCommand DownloadCommand { get; }
+        public DownloadAllCommand DownloadAllCommand { get; }
+        public PreviousCommand PreviousCommand { get; }
+        public NextCommand NextCommand { get; }
+        public PauseCommand PauseCommand { get; }
+        public CreatePlaylistCommand CreatePlaylistCommand { get; }
+        public FixTitleCommand FixTitleCommand { get; }
+        public ClearRequestsCommand ClearRequestsCommand { get; }
+        #endregion
 
-        private List<Song> filteredSongs = new();
-        public List<Song> FilteredSongs
-        {
-            get => filteredSongs;
-            set { filteredSongs = value; NotifyPropertyChanged(); }
-        }
-        //private List<Song> requestedSongs = new();
-        //public List<Song> RequestedSongs
-        //{
-        //    get => requestedSongs;
-        //    set { requestedSongs = value; OnPropertyChanged(); }
-        //}
-        public ObservableCollection<Song> RequestedSongs { get; set; }
+        #region ObservableCollections
+        public ObservableCollection<Song> FoundLinks { get; }
+        public ObservableCollection<Playlist> Playlists { get; }
+        public ObservableCollection<Song> RequestedSongs { get; }
+        #endregion
+
+        private List<Song> _filteredSongs = [];
+        public List<Song> FilteredSongs { get => _filteredSongs; set => SetProperty(ref _filteredSongs, value); }
+
         public Stack<Song> previousSongs = new();
-
 
         public MainVM()
         {
             Status = string.Empty;
 
-            FoundLinks = new();
-            RequestedSongs = new();
-            Playlists = new();
+            FoundLinks = [];
+            RequestedSongs = [];
+            Playlists = [];
 
             SaveVolumeCommand = new(this);
             SearchLinksCommand = new(this);
@@ -169,31 +130,28 @@ namespace RPGGamerAnywhere.WPF.ViewModel
             //Connect to twitch
             //BotManager.Init(TwitchInfo.Token, TwitchInfo.Name, this, TwitchInfo.Channel);
         }
-        
 
         public void SongRequest(string request)
         {
-            if(!IsRequesting) return;
-            var possibleSongs = FoundLinks.Where(x => x.Title != null && x.Title.ToLower().Contains(request.ToLower()));
+            if (!IsRequesting) return;
+            var possibleSongs = FoundLinks.Where(x => x.Title?.ToLower().Contains(request, StringComparison.CurrentCultureIgnoreCase) == true);
             if (possibleSongs.Any())
                 AddSongRequest(possibleSongs.First());
         }
+
         private void AddSongRequest(Song song)
         {
-            popups.Push("Song added to requests");
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                RequestedSongs.Add(song);
-            });
+            _popups.Push("Song added to requests");
+            Application.Current.Dispatcher.Invoke(() => RequestedSongs.Add(song));
         }
+
         public void ClearRequests() => RequestedSongs.Clear();
 
         public void FixTitle()
         {
-            new Thread ( async ()  => 
+            new Thread(async () =>
             {
-                var songs = DatabaseHelper.Read<Song>(DatabaseHelper.Target.Database);
-                foreach(var song in songs)
+                foreach (var song in DatabaseHelper.Read<Song>(DatabaseHelper.Target.Database))
                     await FixSongInfo(song);
                 ReadSongs();
             }).Start();
@@ -203,18 +161,17 @@ namespace RPGGamerAnywhere.WPF.ViewModel
         {
             if (song == null) return;
 
-            string filePath = @"D:\temp.mp3";
+            const string filePath = @"D:\temp.mp3";
             File.Delete(filePath);
             HttpClient client = new();
-            using var stream = await client.GetStreamAsync(song.Url);
-            using var fileStream = new FileStream(filePath, FileMode.CreateNew);
+            await using var stream = await client.GetStreamAsync(song.Url);
+            await using var fileStream = new FileStream(filePath, FileMode.CreateNew);
             await stream.CopyToAsync(fileStream);
             fileStream.Close();
-            var tfile = TagLib.File.Create(filePath);
-            string title = tfile.Tag.Title;
-            string game = tfile.Tag.Album;
-            //MessageBox.Show($"{title}\n" +
-            //                $"{game}");
+            TagLib.File tagFile = TagLib.File.Create(filePath);
+            string title = tagFile.Tag.Title;
+            string game = tagFile.Tag.Album;
+
             song.Title = title;
             song.Game = game;
             DatabaseHelper.Update(song, DatabaseHelper.Target.Database);
@@ -270,7 +227,7 @@ namespace RPGGamerAnywhere.WPF.ViewModel
 
         private void ReadPreferences()
         {
-            var preferences = DatabaseHelper.Read<UserPreference>(DatabaseHelper.Target.UserPrefs);
+            var preferences = DatabaseHelper.Read<UserPreference>(DatabaseHelper.Target.Preferences);
             double? volume = preferences.FirstOrDefault(x => x?.Name == SettingNames.Volume, null)?.Percent;
             Volume = volume != null ? (double)volume : 0.25;
         }
@@ -278,7 +235,7 @@ namespace RPGGamerAnywhere.WPF.ViewModel
         private void ReadPlaylists()
         {
             Playlists.Clear();
-            var allPlaylists = DatabaseHelper.Read<Playlist>(DatabaseHelper.Target.UserPrefs);
+            var allPlaylists = DatabaseHelper.Read<Playlist>(DatabaseHelper.Target.Preferences);
             if (allPlaylists.Count == 0)
                 return;
             foreach (var item in allPlaylists)
@@ -303,8 +260,8 @@ namespace RPGGamerAnywhere.WPF.ViewModel
 
         public void Query()
         {
-            FilteredSongs = FoundLinks.OrderBy(s => s.Url).
-                    Where(x => x.Game != null && x.Game.ToLower().Contains(Search.ToLower())).ToList();
+            FilteredSongs = [.. FoundLinks.
+                    Where(x => x.Game?.ToLower().Contains(Search, StringComparison.CurrentCultureIgnoreCase) == true).OrderBy(s => s.Url)];
             SongCount = $"{FilteredSongs.Count} songs";
         }
 
@@ -314,21 +271,22 @@ namespace RPGGamerAnywhere.WPF.ViewModel
             for (int i = 0; i < 4000; i++)
             {
                 string digit = i.ToString();
-                char dataNumber = digit.First();
+                char dataNumber = digit[0];
                 while (digit.Length < 4)
                     digit = "0" + digit;
-                string url = string.Concat(dataUrl, dataNumber, "/", digit, ".dat");
+                string url = $"{dataUrl}{dataNumber}/{digit}.dat";
                 _ = ReadSongInfoAsync(url, i);
             }
             return Task.CompletedTask;
         }
+
         private async Task ReadSongInfoAsync(string url, int id)
         {
             using HttpClient client = new();
             HttpResponseMessage response = await client.GetAsync(url);
             Stream streamToReadFrom = await response.Content.ReadAsStreamAsync();
             using StreamReader sr = new(streamToReadFrom, Encoding.UTF8);
-            string line = sr.ReadLine()?? "";
+            string line = sr.ReadLine() ?? "";
 
             line = Decode(line);
 
@@ -365,8 +323,10 @@ namespace RPGGamerAnywhere.WPF.ViewModel
 
         private static string Decode(string input) => MyRegex().Replace(input, string.Empty);
 
-        private bool subscribed = false;
+        private bool _subscribed;
+
         private void PlaySong(Song? song) => PlaySong(song, false);
+
         private void PlaySong(Song? song, bool isPrevious)
         {
             //new Thread(async () =>
@@ -386,16 +346,16 @@ namespace RPGGamerAnywhere.WPF.ViewModel
                 Status = $"{song.Game} | {song.Title}";
 
                 IsPlaying = true;
-                if (!subscribed)
+                if (!_subscribed)
                 {
                     element.MediaEnded += Element_MediaEnded;
-                    subscribed = true;
+                    _subscribed = true;
                 }
                 WaveFormSource = new BitmapImage();
                 new Thread(() =>
                 {
                     using var waveStream = new WaveFileReader(song.Url);
-                    var image = waveFormRenderer.Render(waveStream, new MaxPeakProvider(), new StandardWaveFormRendererSettings() { Width = 1650 });
+                    var image = _waveFormRenderer.Render(waveStream, new MaxPeakProvider(), new StandardWaveFormRendererSettings() { Width = 1650 });
                     if (image == null) return;
                     using var ms = new MemoryStream();
                     image.Save(ms, ImageFormat.Bmp);
@@ -408,16 +368,10 @@ namespace RPGGamerAnywhere.WPF.ViewModel
                     bitmapImage.EndInit();
                     bitmapImage.Freeze();
 
-                    Dispatcher.CurrentDispatcher.Invoke(() =>
-                    {
-                        WaveFormSource = bitmapImage;
-                    });
-                    
+                    Dispatcher.CurrentDispatcher.Invoke(() => WaveFormSource = bitmapImage);
                 }).Start();
             }
         }
-
-        
 
         //private static async Task LogSongInfoAsync(Song? song)
         //{
@@ -451,10 +405,11 @@ namespace RPGGamerAnywhere.WPF.ViewModel
             if (((MainWindow)Application.Current.MainWindow).MyPlayer is MediaElement element)
                 element.Volume = Volume;
         }
+
         public void SetVolumePreference()
         {
             SetPreference(SettingNames.Volume, Volume);
-            popups.Push("Volume Level Saved");
+            _popups.Push("Volume Level Saved");
         }
 
         private void StartTimer()
@@ -473,16 +428,16 @@ namespace RPGGamerAnywhere.WPF.ViewModel
             updater.Start();
         }
 
-        void TimerTick(object? sender, EventArgs e)
+        private void TimerTick(object? sender, EventArgs e)
         {
-            if (Application.Current.MainWindow != null)
-                if (((MainWindow)Application.Current.MainWindow).MyPlayer is MediaElement element)
-                    if (element.Source != null)
-                        if (element.NaturalDuration.HasTimeSpan)
-                        {
-                            Duration = string.Format("{0} / {1}", element.Position.ToString(@"mm\:ss"), element.NaturalDuration.TimeSpan.ToString(@"mm\:ss"));
-                            FillWidth = element.Position.TotalMilliseconds / element.NaturalDuration.TimeSpan.TotalMilliseconds * 800;
-                        }
+            if (Application.Current.MainWindow != null
+                && ((MainWindow)Application.Current.MainWindow).MyPlayer is MediaElement element
+                && element.Source != null
+                && element.NaturalDuration.HasTimeSpan)
+            {
+                Duration = string.Format("{0} / {1}", element.Position.ToString(@"mm\:ss"), element.NaturalDuration.TimeSpan.ToString(@"mm\:ss"));
+                FillWidth = element.Position.TotalMilliseconds / element.NaturalDuration.TimeSpan.TotalMilliseconds * 800;
+            }
         }
 
         private void Element_MediaEnded(object sender, RoutedEventArgs e) => PlayRandomSong();
@@ -495,7 +450,7 @@ namespace RPGGamerAnywhere.WPF.ViewModel
 
                 if (FilteredSongs.Any(s => s.Id == song.Id))
                 {
-                    SelectedSong = FilteredSongs.Where(s => s.Id == song.Id).First(); ;
+                    SelectedSong = FilteredSongs.First(s => s.Id == song.Id);
                     RequestedSongs.Remove(RequestedSongs.First());
                 }
             }
@@ -506,6 +461,7 @@ namespace RPGGamerAnywhere.WPF.ViewModel
             }
             PlaySong(SelectedSong);
         }
+
         public void PlayPrevious()
         {
             if (previousSongs.Count == 0) return;
@@ -520,8 +476,8 @@ namespace RPGGamerAnywhere.WPF.ViewModel
 
             MessageBox.Show($"Downloading to:\n{downloadFolder}");
             HttpClient client = new();
-            using var stream = await client.GetStreamAsync(song.Url);
-            using var fileStream = new FileStream(downloadFolder, FileMode.CreateNew);
+            await using Stream stream = await client.GetStreamAsync(song.Url);
+            await using FileStream fileStream = new(downloadFolder, FileMode.CreateNew);
             await stream.CopyToAsync(fileStream);
         }
 
@@ -536,103 +492,111 @@ namespace RPGGamerAnywhere.WPF.ViewModel
                 }
                 else
                 {
-                    if(SelectedSong == null) PlayRandomSong();
+                    if (SelectedSong == null) PlayRandomSong();
                     element.Play();
                     IsPlaying = true;
                 }
-
             }
         }
 
         public void CreatePlaylist()
         {
-            DatabaseHelper.Insert(new Playlist { Name = "New playlist" }, DatabaseHelper.Target.UserPrefs);
+            DatabaseHelper.Insert(new Playlist { Name = "New playlist" }, DatabaseHelper.Target.Preferences);
             ReadPlaylists();
         }
 
         #region SetPreferences
+
         private static void SetPreference(string preferenceName, bool value)
         {
-            var target = DatabaseHelper.Read<UserPreference>(DatabaseHelper.Target.UserPrefs).FirstOrDefault(x => x.Name == preferenceName, CreatePreference(preferenceName));
+            var target = DatabaseHelper
+                .Read<UserPreference>(DatabaseHelper.Target.Preferences)
+                .FirstOrDefault(x => x.Name == preferenceName, CreatePreference(preferenceName));
             if (target == null) return;
             target.IsTrue = value;
-            DatabaseHelper.Update(target, DatabaseHelper.Target.UserPrefs);
+            DatabaseHelper.Update(target, DatabaseHelper.Target.Preferences);
         }
+
         private static void SetPreference(string preferenceName, double value)
         {
-            var target = DatabaseHelper.Read<UserPreference>(DatabaseHelper.Target.UserPrefs).FirstOrDefault(x => x.Name == preferenceName, CreatePreference(preferenceName));
+            var target = DatabaseHelper
+                .Read<UserPreference>(DatabaseHelper.Target.Preferences)
+                .FirstOrDefault(x => x.Name == preferenceName, CreatePreference(preferenceName));
             if (target == null) return;
             target.Percent = value;
-            DatabaseHelper.Update(target, DatabaseHelper.Target.UserPrefs);
+            DatabaseHelper.Update(target, DatabaseHelper.Target.Preferences);
         }
+
         private static void SetPreference(string preferenceName, int value)
         {
-            var target = DatabaseHelper.Read<UserPreference>(DatabaseHelper.Target.UserPrefs).FirstOrDefault(x => x.Name == preferenceName, CreatePreference(preferenceName));
+            var target = DatabaseHelper
+                .Read<UserPreference>(DatabaseHelper.Target.Preferences)
+                .FirstOrDefault(x => x.Name == preferenceName, CreatePreference(preferenceName));
             if (target == null) return;
             target.Value = value;
-            DatabaseHelper.Update(target, DatabaseHelper.Target.UserPrefs);
+            DatabaseHelper.Update(target, DatabaseHelper.Target.Preferences);
         }
+
         private static UserPreference CreatePreference(string name)
         {
-            var pref = new UserPreference { Name = name };
-            DatabaseHelper.Insert(pref, DatabaseHelper.Target.UserPrefs);
-            return pref;
+            var preferences = new UserPreference { Name = name };
+            DatabaseHelper.Insert(preferences, DatabaseHelper.Target.Preferences);
+            return preferences;
         }
-        #endregion
+        #endregion SetPreferences
 
+        public double PopupHeight { get => _popupHeight; set => SetProperty(ref _popupHeight, value); }
+        public double PopupFontSize { get => _popupFontSize; set => SetProperty(ref _popupFontSize, value); }
+        public string PopupText { get => _popupText; set => SetProperty(ref _popupText, value); }
 
+        private readonly Stack<string> _popups = new();
 
-        public double PopupHeight { get => popupHeight; set { popupHeight = value; NotifyPropertyChanged(); } }
-        public double PopupFontSize { get => popupFontSize; set { popupFontSize = value; NotifyPropertyChanged(); } }
-        public string PopupText { get => popupText; set { popupText = value; NotifyPropertyChanged(); } }
-        private readonly Stack<string> popups = new();
-        private enum popupState
+        private enum PopupState
         {
             Waiting,
             Expanding,
             Collapsing,
             Display
         }
-        private popupState PopupState = popupState.Waiting;
-        private double popupHeight = -40;
-        private double popupFontSize = 1;
-        private string popupText = string.Empty;
-        private int popupDisplayTick = 0;
-        private double fillWidth;
-        private ImageSource? waveFormSource;
+
+        private PopupState _popupState = PopupState.Waiting;
+        private double _popupHeight = -40;
+        private double _popupFontSize = 1;
+        private string _popupText = string.Empty;
+        private int _popupDisplayTick = 0;
+        private double _fillWidth;
+        private ImageSource? _waveFormSource;
 
         private void Update(object? sender, EventArgs e)
         {
-            if (PopupState == popupState.Waiting && popups.Any())
+            if (_popupState == PopupState.Waiting && _popups.Count != 0)
             {
-                PopupState = popupState.Expanding;
-                PopupText = popups.Pop();
+                _popupState = PopupState.Expanding;
+                PopupText = _popups.Pop();
             }
-            else if (PopupState == popupState.Expanding)
+            else if (_popupState == PopupState.Expanding)
             {
                 PopupHeight += 1.2;
                 PopupFontSize += 0.5;
                 if (PopupHeight >= 0)
-                    PopupState = popupState.Display;
+                    _popupState = PopupState.Display;
             }
-            else if (PopupState == popupState.Collapsing)
+            else if (_popupState == PopupState.Collapsing)
             {
                 PopupHeight -= 1.2;
                 PopupFontSize -= 0.5;
                 if (PopupHeight <= -30)
-                    PopupState = popupState.Waiting;
-
+                    _popupState = PopupState.Waiting;
             }
-            else if (PopupState == popupState.Display)
+            else if (_popupState == PopupState.Display)
             {
-                if (popupDisplayTick++ == 20)
+                if (_popupDisplayTick++ == 20)
                 {
-                    PopupState = popupState.Collapsing;
-                    popupDisplayTick = 0;
+                    _popupState = PopupState.Collapsing;
+                    _popupDisplayTick = 0;
                 }
             }
         }
-
 
         public void DownloadAll()
         {
@@ -653,7 +617,6 @@ namespace RPGGamerAnywhere.WPF.ViewModel
         //        int count = 0;
         //        foreach (var song in FoundLinks)
         //        {
-
         //            if (song == null) return;
 
         //            string downloadFolder = Path.Combine(userRoot, "Radio", $"song_{count++}.mpeg");

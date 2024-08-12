@@ -11,5 +11,6 @@ public class FixTitleCommand(MainVM vm) : ICommand
     }
 
     public bool CanExecute(object? parameter) => false;
+
     public void Execute(object? parameter) => vm.FixTitle();
 }

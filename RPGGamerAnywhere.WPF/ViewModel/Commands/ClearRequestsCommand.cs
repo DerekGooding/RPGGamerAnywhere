@@ -11,5 +11,6 @@ public class ClearRequestsCommand(MainVM vm) : ICommand
     }
 
     public bool CanExecute(object? parameter) => true;
+
     public void Execute(object? parameter) => vm.ClearRequests();
 }

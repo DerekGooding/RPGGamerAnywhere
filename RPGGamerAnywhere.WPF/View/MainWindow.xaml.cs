@@ -12,6 +12,7 @@ public partial class MainWindow : Window
     {
         set { DataContext = value; }
     }
+
     public MainWindow()
     {
         InitializeComponent();
@@ -30,7 +31,6 @@ public partial class MainWindow : Window
             menuItem.Click += SelectView_Click;
             menuItem.IsEnabled = item.IsEnabled;
             ViewMenu.Items.Add(menuItem);
-            
         }
     }
 
@@ -50,7 +50,7 @@ public partial class MainWindow : Window
                          $"Created by: Derek Gooding\n" +
                          $"©2023\n" +
                          $"Libertas Infinitum";
-        
+
         MessageBox.Show(message);
     }
 
@@ -89,19 +89,19 @@ public partial class MainWindow : Window
 
     private void ShowDownloadPath_Click(object sender, RoutedEventArgs e)
     {
-        string userRoot = Environment.GetEnvironmentVariable("USERPROFILE")?? "C:\\";
+        string userRoot = Environment.GetEnvironmentVariable("USERPROFILE") ?? "C:\\";
         string downloadFolder = Path.Combine(userRoot, "Downloads");
         MessageBox.Show(downloadFolder);
     }
 
     private void Rectangle_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
-        if(sender is UIElement rectangle)
+        if (sender is UIElement rectangle)
         {
             var mousePosition = e.MouseDevice.GetPosition(rectangle);
             if (((MainWindow)Application.Current.MainWindow).MyPlayer is MediaElement element)
                 element.Position = element.NaturalDuration.TimeSpan / (800 / mousePosition.X);
-        } 
+        }
     }
 
     private void Fix_DoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)

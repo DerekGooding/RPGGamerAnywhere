@@ -23,6 +23,7 @@ public static class AudioHelper
     private static string imageFile;
     private static readonly WaveFormRenderer waveFormRenderer = new();
     private static readonly WaveFormRendererSettings standardSettings = new StandardWaveFormRendererSettings();
+
     private static IPeakProvider GetPeakProvider()
     {
         //switch (comboBoxPeakCalculationStrategy.SelectedIndex)
