@@ -15,4 +15,3 @@ RPGGamer-Radio.com is nice for listening to your favourite game music but, like 
 This stand alone application gives you some extra functionality without downloading a library of songs. It uses known URLs to make a SQLlite database so at a click, you can play any song. 
 
 Also includes pause and next functions as well as a more reliable volume control. 
-
